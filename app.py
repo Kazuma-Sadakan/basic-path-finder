@@ -3,7 +3,7 @@ import sys
 
 import pygame 
 from consts import WIDTH, HEIGHT, N_ROWS, N_COLS, BLOCK_SIZE
-from consts import WHITE ,BLACK ,BLUE ,GREEN
+from consts import WHITE ,BLACK ,BLUE ,GREEN, RED
 import heapq
 
 pygame.init()
@@ -16,7 +16,7 @@ class Role:
     END = GREEN
     BLOCK = BLACK
     SERCHED = (247, 246, 242)
-    PATH = (240, 229, 207)
+    PATH = RED
 
 class Block:
     def __init__(self, row, col):
@@ -117,6 +117,13 @@ class Screen:
         row = y // BLOCK_SIZE
         return (row, col)
 
+    def create_path(self, came_from, current_block):
+        while current_block in came_from:
+            current_block = came_from[current_block]
+            if self.path["START"] != current_block and self.path["END"] != current_block:
+                current_block.set_role(Role.PATH)
+            self.update()
+
     def run(self):
         while not self.done:
             for event in pygame.event.get():
@@ -157,7 +164,6 @@ class Screen:
                 if event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_RETURN:
                         path = self.dijkstras_search(self.box_list, self.path["START"], self.path["END"])
-                        print(path)
                         self.done = True
                         break
                         
@@ -179,9 +185,9 @@ class Screen:
         while not frontier.empty(): 
             
             cost, current_block = frontier.get() 
-            if self.path["START"] != current_block or self.path["END"] != current_block:
-                current_block.set_role(Role.SERCHED)
+            
             if current_block == goal:
+                self.create_path(came_from, current_block)
                 break
 
             for next in current_block.get_unused_neighbors(blocks):
@@ -191,7 +197,9 @@ class Screen:
                         cost_so_far[next] = new_cost
                         frontier.put((new_cost, next))
                         came_from[next] = current_block
-                        next.set_role(Role.PATH)
+                        if self.path["START"] != current_block and self.path["END"] != current_block:
+                            current_block.set_role(Role.SERCHED)
+
                 next.draw(self.window)
                 pygame.display.flip()
 
